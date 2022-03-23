@@ -13,4 +13,4 @@ Hippocluster's *fit* and *update* methods accept a [RandomWalkGraph](https://git
 `myGraph = RandomWalkGraph(nx.grid_2d_graph(20, 20))`
 
 
-!(https://github.com/echalmers/hippocluster/blob/master/sample_figure.png)
+![sample graph clustering](https://github.com/echalmers/hippocluster/blob/master/sample_figure.png)
