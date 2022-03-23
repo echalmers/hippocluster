@@ -2,7 +2,7 @@
 Hippocluster: an efficient, brain-inspired adaptation of K-means for graph clustering
 
 ## installation
-you can install using pip:
+install using pip:
 `pip install git+https://github.com/echalmers/hippocluster.git`
 
 ## use
