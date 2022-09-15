@@ -140,3 +140,5 @@ class Hippocluster(GraphClusteringAlgorithm):
         assigns = {node: predictions[self.map[node]] for node in set(g.nodes).intersection(set(self.map))}
         assigns = {key: val for key, val in assigns.items() if val != -1}
         return assigns
+
+# let's say I add some more code here
