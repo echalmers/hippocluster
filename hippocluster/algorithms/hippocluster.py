@@ -16,7 +16,7 @@ class Hippocluster(GraphClusteringAlgorithm):
     Hippocluster performs graph clustering using a version of spherical k-means applied in the random-walk space
     """
 
-    def __init__(self, n_clusters, batch_size, max_len, min_len=None, n_walks=None, lr=0.05, drop_threshold=0.02):
+    def __init__(self, n_clusters, batch_size=None, max_len=None, min_len=None, n_walks=None, lr=0.05, drop_threshold=0.02):
         """
         :param n_clusters: number of clusters to form
         :param batch_size: number of random walks to process at a time
@@ -36,22 +36,16 @@ class Hippocluster(GraphClusteringAlgorithm):
         self.centers = None
         self.drop_threshold = drop_threshold
 
-    def update(self, g: RandomWalkGraph, lr=None) -> int:
+    def update(self, walks: list, lr=None) -> int:
         """
         update the clusters on a single batch of random walks
-        :param g: the graph being clustered
+        :param walks: a random walk as a list of graph nodes
         :param lr: (optional) learning rate parameter. If specified, overrides the object's lr property
         :return: number of float values stored in the weight matrix
         """
 
         lr = lr or self.lr
         eq_sample_count = 1 / lr - 1
-
-        # get walks
-        walks = [
-            set(g.unweighted_random_walk(length=random.randint(self.min_len, self.max_len)))
-            for _ in range(self.batch_size)
-        ]
 
         # assign new nodes
         all_states = set().union(*[walk for walk in walks])
@@ -76,7 +70,7 @@ class Hippocluster(GraphClusteringAlgorithm):
 
         # compute data means by cluster
         onehot_labels = sparse.csr_matrix(
-            (np.ones(self.batch_size), (winners, np.arange(self.batch_size))), shape=(self.n_clusters, self.batch_size)
+            (np.ones(len(walks)), (winners, np.arange(len(walks)))), shape=(self.n_clusters, len(walks))
         )
         cluster_means = onehot_labels.dot(x)
         cluster_counts = onehot_labels.sum(axis=1).A1
@@ -119,7 +113,13 @@ class Hippocluster(GraphClusteringAlgorithm):
         lr_sched = np.linspace(0.5, 0.01, steps)
         max_size = 0
         for i in range(steps):
-            max_size = max(max_size, self.update(g, lr=lr_sched[i]))
+            # get walks
+            walks = [
+                set(g.unweighted_random_walk(length=random.randint(self.min_len, self.max_len)))
+                for _ in range(self.batch_size)
+            ]
+            # update the clustering
+            max_size = max(max_size, self.update(walks=walks, lr=lr_sched[i]))
 
         assignments = self.get_assignments(g)
 
