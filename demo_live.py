@@ -15,7 +15,7 @@ graph = RandomWalkLattice(m=10, n=10)
 colors = np.random.rand(100, 3)  # random colors for visualizing graph clusters
 
 # set a desired number of clusters
-N_CLUSTERS = graph.n_communities or 4
+N_CLUSTERS = graph.n_communities or 5
 
 # instantiate Hippocluster object
 hippocluster = Hippocluster(
