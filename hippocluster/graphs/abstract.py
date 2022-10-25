@@ -15,12 +15,13 @@ class RandomWalkGraph:
     composition class that extends a networkx graph with the ability to generate random walks, and other functionality
     """
 
-    def __init__(self, networkx_graph):
+    def __init__(self, networkx_graph, pos=None):
         """
         :param networkx_graph: base networkx graph to use
+        :parm pos: a networkx layout for plotting
         """
         self.G = networkx_graph
-        self.pos = None
+        self.pos = pos
         self.shuffled_node_list = None
         self.random_walk_index = 0
 
