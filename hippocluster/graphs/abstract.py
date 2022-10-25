@@ -36,12 +36,20 @@ class RandomWalkGraph:
     @property
     @abstractmethod
     def communities(self):
-        raise NotImplementedError()
+        """
+        should return an iterable of class assignments for each of the graph nodes.
+        if the graph has no ground truth communities, return None
+        """
+        return None
 
     @property
     @abstractmethod
     def n_communities(self):
-        raise NotImplementedError()
+        """
+        should return the integer number of ground truth communities for this graph
+        if the graph has no ground truth communities, return None
+        """
+        return None
 
     def modularity(self, cluster_assignments: dict = None):
         """
