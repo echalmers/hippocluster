@@ -14,7 +14,7 @@ hippocluster = Hippocluster(
     max_len=75,
     min_len=20,
     n_walks=graph.n_nodes * 10,
-    drop_threshold=0.001
+    drop_threshold=0.01
 )
 
 # perform clustering
