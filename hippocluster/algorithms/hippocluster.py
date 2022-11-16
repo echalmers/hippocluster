@@ -39,7 +39,7 @@ class Hippocluster(GraphClusteringAlgorithm):
     def update(self, walks: list, lr=None) -> int:
         """
         update the clusters on a single batch of random walks
-        :param walks: a random walk as a list of graph nodes
+        :param walks: list of random walks, where each random walk s a list of graph nodes
         :param lr: (optional) learning rate parameter. If specified, overrides the object's lr property
         :return: number of float values stored in the weight matrix
         """
