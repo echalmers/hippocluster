@@ -83,6 +83,7 @@ class RandomWalkGraph:
         """
         generate a random walk without considering edge weights
         :param length: maximum walk length
+        :param n: number of walks to generate. If n>1, return will be a list of walk-lists
         :return: list of nodes passed
         """
         if self.shuffled_node_list is None:
@@ -100,6 +101,12 @@ class RandomWalkGraph:
             nodes.append(random.choice(list(options)))
 
         return nodes
+
+    def unweighted_random_walks(self, min_length, max_length, n):
+        return [
+            self.unweighted_random_walk(length=random.randint(min_length, max_length))
+            for _ in range(n)
+        ]
 
     def restrained_unweighted_random_walk(self, max_l, w, th, return_set=False, start_node=None):
         """
