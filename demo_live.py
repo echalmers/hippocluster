@@ -27,7 +27,7 @@ hippocluster = Hippocluster(
 for step in range(100):
 
     # get a batch of random walks
-    walks = graph.unweighted_random_walks(min_length=15, max_length=25, n=N_CLUSTERS*5 if step == 0 else N_CLUSTERS)
+    walks = graph.random_walks(min_length=15, max_length=25, n=N_CLUSTERS*5 if step == 0 else N_CLUSTERS)
 
     # update the clustering
     hippocluster.update(walks)

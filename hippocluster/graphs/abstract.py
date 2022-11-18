@@ -2,6 +2,7 @@ from abc import abstractmethod
 import itertools
 import random
 import time
+from warnings import warn
 
 import networkx as nx
 from networkx.algorithms.community.quality import modularity as nx_modularity
@@ -95,18 +96,55 @@ class RandomWalkGraph:
         self.random_walk_index = (self.random_walk_index + 1) % len(self.shuffled_node_list)
 
         for step in range(length - 1):
-            options = self.G.adj.get(nodes[-1])
-            if options is None or len(options) == 0:
+            options = self.G.adj.get(nodes[-1], [])
+            if len(options) == 0:
                 return nodes
             nodes.append(random.choice(list(options)))
 
         return nodes
 
     def unweighted_random_walks(self, min_length, max_length, n):
+        warn('unweighted_random_walks will be deprecated in a future version. use random_walks instead')
         return [
             self.unweighted_random_walk(length=random.randint(min_length, max_length))
             for _ in range(n)
         ]
+
+    def random_walk(self, length):
+        """
+        generate a random walk, considering edge weights
+        :param length: maximum walk length
+        :param n: number of walks to generate. If n>1, return will be a list of walk-lists
+        :return: list of nodes passed
+        """
+        if self.shuffled_node_list is None:
+            self.shuffled_node_list = list(self.G)
+            random.shuffle(self.shuffled_node_list)
+
+        # nodes = [start_node or random.choice(list(self.G.nodes))]
+        nodes = [self.shuffled_node_list[self.random_walk_index]]
+        self.random_walk_index = (self.random_walk_index + 1) % len(self.shuffled_node_list)
+
+        for step in range(length - 1):
+            options = self.G.adj.get(nodes[-1], dict())
+            weights = [options[neighbor].get('weight', 1) for neighbor in options]
+            if len(options) == 0:
+                return nodes
+            nodes.extend(random.choices(list(options), weights=weights, k=1))
+
+        return nodes
+
+    def random_walks(self, min_length, max_length, n, weighted=True):
+        if weighted:
+            return [
+                self.random_walk(length=random.randint(min_length, max_length))
+                for _ in range(n)
+            ]
+        else:
+            return [
+                self.unweighted_random_walk(length=random.randint(min_length, max_length))
+                for _ in range(n)
+            ]
 
     def restrained_unweighted_random_walk(self, max_l, w, th, return_set=False, start_node=None):
         """
@@ -157,13 +195,6 @@ class RandomWalkGraph:
                 edge_color=[edge_colors.get(edge, [0, 0, 0]) for edge in self.G.edges],
                 node_size=400, width=edgewidth, font_size=15,
                 )
-
-    def random_walks_as_matrix(self, n, l_max, l_min):
-        mat = sparse.lil_matrix((n, self.n_nodes))
-        for i in range(n):
-            walk = self.unweighted_random_walk(random.randint(l_min, l_max))
-            mat[i, list(set(walk))] = 1
-        return mat.tocsr(copy=False)
 
     def score_clustering_method(self, algorithm) -> dict:
         """

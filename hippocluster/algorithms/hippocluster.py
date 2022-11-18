@@ -115,7 +115,7 @@ class Hippocluster(GraphClusteringAlgorithm):
         for i in range(steps):
             # get walks
             walks = [
-                set(g.unweighted_random_walk(length=random.randint(self.min_len, self.max_len)))
+                set(g.random_walk(length=random.randint(self.min_len, self.max_len)))
                 for _ in range(self.batch_size)
             ]
             # update the clustering
