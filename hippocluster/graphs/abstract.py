@@ -25,6 +25,7 @@ class RandomWalkGraph:
         self.pos = pos
         self.shuffled_node_list = None
         self.random_walk_index = 0
+        self.adj = None
 
     @property
     def n_nodes(self):
@@ -33,6 +34,10 @@ class RandomWalkGraph:
     @property
     def nodes(self):
         return list(self.G.nodes)
+
+    @property
+    def edges(self):
+        return list(self.G.edges)
 
     @property
     @abstractmethod
@@ -78,7 +83,9 @@ class RandomWalkGraph:
 
     @property
     def adjacency_matrix(self):
-        return nx.linalg.graphmatrix.adjacency_matrix(self.G)
+        if self.adj is None:
+            self.adj = nx.adjacency_matrix(self.G).tocsr()
+        return self.adj
 
     def unweighted_random_walk(self, length):
         """
@@ -133,6 +140,34 @@ class RandomWalkGraph:
             nodes.extend(random.choices(list(options), weights=weights, k=1))
 
         return nodes
+
+    # def random_walk(self, length):
+    #     nodes = [random.randint(0, self.n_nodes-1)]
+    #     for step in range(length - 1):
+    #         this_adj = self.adj[[nodes[-1]], :]
+    #         if len(this_adj.data) == 0:
+    #             break
+    #         nodes.append(np.random.choice(this_adj.nonzero()[1], p=this_adj.data / this_adj.data.sum()))
+    #     node_names = self.nodes
+    #     return [node_names[n] for n in nodes]
+
+    def random_diffusion(self, size):
+        """
+        Generate a set of nodes accessible from a random start node, by repeated multiplication by the
+        adjacency matrix
+        :param size: quit when the set of nodes reaches this size
+        :return: set of nodes
+        """
+
+        nodes = sparse.csc_matrix((len(self.nodes), 1))
+        nodes[random.randint(0, len(self.nodes)-1), 0] = 1
+
+        for _ in range(size):
+            nodes += self.adjacency_matrix.dot(nodes)
+            if nodes.count_nonzero() >= size:
+                break
+
+        return [self.nodes[i] for i in nodes.nonzero()[0]]
 
     def random_walks(self, min_length, max_length, n, weighted=True):
         if weighted:
