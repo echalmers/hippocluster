@@ -1,33 +1,31 @@
 from hippocluster.graphs.lfr import RandomWalkLFR
-from hippocluster.graphs.lattice import RandomWalkLattice
 from hippocluster.algorithms.hippocluster import Hippocluster
 import matplotlib.pyplot as plt
 import numpy as np
-import random
 
 
 plt.ion()
 
 
 # create a small sample graph
-# graph = RandomWalkLFR(n=100, tau1=2, tau2=1.1, mu=0.1, min_degree=3, max_degree=5, min_community=15, max_community=20)
-graph = RandomWalkLattice(m=10, n=10)
+graph = RandomWalkLFR(n=100, tau1=2, tau2=1.1, mu=0.1, min_degree=3, max_degree=5, min_community=15, max_community=20)
+
 colors = np.random.rand(100, 3)  # random colors for visualizing graph clusters
 
 # set a desired number of clusters
-N_CLUSTERS = graph.n_communities or 5
+N_CLUSTERS = graph.n_communities
 
 # instantiate Hippocluster object
 hippocluster = Hippocluster(
     n_clusters=N_CLUSTERS,
-    drop_threshold=0.001
+    drop_threshold=0.001,
 )
 
 # perform clustering
 for step in range(100):
 
     # get a batch of random walks
-    walks = graph.random_walks(min_length=15, max_length=25, n=N_CLUSTERS*5 if step == 0 else N_CLUSTERS)
+    walks = graph.random_walks(min_length=10, max_length=25, n=N_CLUSTERS*5 if step == 0 else N_CLUSTERS)
 
     # update the clustering
     hippocluster.update(walks)
@@ -50,4 +48,4 @@ for step in range(100):
         plt.subplot(1, n_panels, 3)
         graph.plot(node_colors={graph.nodes[i]: colors[graph.communities[i]] for i in range(graph.n_nodes)})
         plt.title('ground truth clusters')
-    plt.pause(0.2)
+    plt.pause(0.02)
