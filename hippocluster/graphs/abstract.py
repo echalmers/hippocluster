@@ -16,7 +16,7 @@ class RandomWalkGraph:
     composition class that extends a networkx graph with the ability to generate random walks, and other functionality
     """
 
-    def __init__(self, networkx_graph, pos=None):
+    def __init__(self, networkx_graph, pos=None, walk_type='walk', no_deadend_walks=True):
         """
         :param networkx_graph: base networkx graph to use
         :parm pos: a networkx layout for plotting
@@ -26,6 +26,12 @@ class RandomWalkGraph:
         self.shuffled_node_list = None
         self.random_walk_index = 0
         self.adj = None
+        self.no_deadend_walks = no_deadend_walks
+
+        if walk_type == 'diffusion':
+            self._walk_generator = self._random_diffusion
+        else:
+            self._walk_generator = self._random_walk
 
     @property
     def n_nodes(self):
@@ -125,33 +131,32 @@ class RandomWalkGraph:
         :return: list of nodes passed
         """
         if self.shuffled_node_list is None:
-            self.shuffled_node_list = list(self.G)
+            if self.no_deadend_walks:
+                self.shuffled_node_list = [node for node in self.G if len(self.G[node]) > 0]
+            else:
+                self.shuffled_node_list = list(self.G)
             random.shuffle(self.shuffled_node_list)
 
         # nodes = [start_node or random.choice(list(self.G.nodes))]
-        nodes = [self.shuffled_node_list[self.random_walk_index]]
+        start_node = self.shuffled_node_list[self.random_walk_index]
         self.random_walk_index = (self.random_walk_index + 1) % len(self.shuffled_node_list)
+
+        return self._walk_generator(length, start_node)
+
+    def _random_walk(self, length, start_node):
+
+        nodes = [start_node]
 
         for step in range(length - 1):
             options = self.G.adj.get(nodes[-1], dict())
-            weights = [options[neighbor].get('weight', 1) for neighbor in options]
             if len(options) == 0:
                 return nodes
+            weights = [options[neighbor].get('weight', 1) for neighbor in options]
             nodes.extend(random.choices(list(options), weights=weights, k=1))
 
         return nodes
 
-    # def random_walk(self, length):
-    #     nodes = [random.randint(0, self.n_nodes-1)]
-    #     for step in range(length - 1):
-    #         this_adj = self.adj[[nodes[-1]], :]
-    #         if len(this_adj.data) == 0:
-    #             break
-    #         nodes.append(np.random.choice(this_adj.nonzero()[1], p=this_adj.data / this_adj.data.sum()))
-    #     node_names = self.nodes
-    #     return [node_names[n] for n in nodes]
-
-    def random_diffusion(self, size):
+    def _random_diffusion(self, size, start_node):
         """
         Generate a set of nodes accessible from a random start node, by repeated multiplication by the
         adjacency matrix
@@ -159,15 +164,20 @@ class RandomWalkGraph:
         :return: set of nodes
         """
 
-        nodes = sparse.csc_matrix((len(self.nodes), 1))
-        nodes[random.randint(0, len(self.nodes)-1), 0] = 1
+        nodes = [start_node]
+        frontier = dict()
 
-        for _ in range(size):
-            nodes += self.adjacency_matrix.dot(nodes)
-            if nodes.count_nonzero() >= size:
-                break
+        for step in range(size - 1):
+            options = self.G.adj.get(nodes[-1], dict())
+            for node in options:
+                weight = options[node].get('weight', 1.0)
+                frontier[node] = frontier.get(node, 0.0) + weight
 
-        return [self.nodes[i] for i in nodes.nonzero()[0]]
+            if len(frontier) == 0:
+                return nodes
+            nodes.extend(random.choices(list(frontier), weights=frontier.values(), k=1))
+
+        return nodes
 
     def random_walks(self, min_length, max_length, n, weighted=True):
         if weighted:
