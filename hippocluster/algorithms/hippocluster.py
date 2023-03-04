@@ -36,7 +36,7 @@ class Hippocluster(GraphClusteringAlgorithm):
     Hippocluster performs graph clustering using a version of spherical k-means applied in the random-walk space
     """
 
-    def __init__(self, n_clusters, batch_size=None, max_len=None, min_len=None, n_walks=None, lr=0.05, drop_threshold=0.02, n_jobs=1):
+    def __init__(self, n_clusters, batch_size=None, max_len=None, min_len=None, n_walks=None, lr=0.05, drop_threshold=0.02, n_jobs=1, initialize='kmeans++'):
         """
         :param n_clusters: number of clusters to form
         :param batch_size: number of random walks to process at a time
@@ -46,6 +46,7 @@ class Hippocluster(GraphClusteringAlgorithm):
         :param lr: learning rate
         :param drop_threshold: minimum weight - weights below this threshold will be dropped
         :param n_jobs: number of parallel processes for generating random walks
+        :param initialize: method of initializing cluster centers: 'kmeans++' or 'random'
         """
         self.n_clusters = n_clusters
         self.lr = lr
@@ -57,6 +58,7 @@ class Hippocluster(GraphClusteringAlgorithm):
         self.centers = None
         self.drop_threshold = drop_threshold
         self.n_jobs = n_jobs
+        self.initialize = initialize
 
     def update(self, walks: list, lr=None) -> int:
         """
@@ -82,17 +84,25 @@ class Hippocluster(GraphClusteringAlgorithm):
 
         # initialize if this is the first iteration
         if self.centers is None:
-            self.centers = sparse.csr_matrix(
-                normalize(kmeans_plusplus(x, self.n_clusters)[0], norm='l2', axis=1, copy=False)
-            )
+            if self.initialize == 'kmeans++':
+                self.centers = sparse.csr_matrix(
+                    normalize(kmeans_plusplus(x, self.n_clusters)[0], norm='l2', axis=1, copy=False)
+                )
+            else:
+                self.centers = sparse.csr_matrix(x[np.random.randint(0, x.shape[0], self.n_clusters)])
 
         # compute distances (dot products)
         dots = self.centers.dot(x.T)
         winners = dots.argmax(axis=0).A1
 
+        # drop walks that didn't activate anything
+        keep_walks = dots.max(axis=0).nonzero()[1]
+        winners = winners[keep_walks]
+        x = x[keep_walks, :]
+
         # compute data means by cluster
         onehot_labels = sparse.csr_matrix(
-            (np.ones(len(walks)), (winners, np.arange(len(walks)))), shape=(self.n_clusters, len(walks))
+            (np.ones(x.shape[0]), (winners, np.arange(x.shape[0]))), shape=(self.n_clusters, x.shape[0])
         )
         cluster_means = onehot_labels.dot(x)
         cluster_counts = onehot_labels.sum(axis=1).A1
@@ -131,17 +141,17 @@ class Hippocluster(GraphClusteringAlgorithm):
         :param g: graph to cluster
         :return: dictionary containing assignments, size (number of values stored in weight matrix), and walks used
         """
-        steps = int(self.n_walks / self.batch_size)
-        lr_sched = np.linspace(0.4, 0.01, steps)
+
         max_size = 0
         n_walks_processed = 0
 
         if self.n_jobs < 2:
+            steps = self.n_walks // self.batch_size
             for i in range(steps):
                 # get walks
                 walks = g.random_walks(min_length=self.min_len, max_length=self.max_len, n=self.batch_size)
                 # update the clustering
-                max_size = max(max_size, self.update(walks=walks, lr=lr_sched[i]))
+                max_size = max(max_size, self.update(walks=walks))
                 n_walks_processed += self.batch_size
 
         else:
