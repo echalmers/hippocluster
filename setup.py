@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="hippocluster",
-    version="0.0.2",
+    version="0.0.3",
     author="Eric Chalmers",
     author_email="dchalmer@ualberta.ca",
     description="Hippocluster: an efficient, brain-inspired adaptation of K-means for graph clustering",

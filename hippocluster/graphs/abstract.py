@@ -176,6 +176,7 @@ class RandomWalkGraph:
             if len(frontier) == 0:
                 return nodes
             nodes.extend(random.choices(list(frontier), weights=frontier.values(), k=1))
+            frontier.pop(nodes[-1], None)
 
         return nodes
 
