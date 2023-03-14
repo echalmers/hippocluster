@@ -37,7 +37,7 @@ if __name__ == '__main__':
     print(f'hippocluster found {len(set(assignments.values()))} clusters')
 
     # plot cluster assignments
-    colors = np.random.rand(N_CLUSTERS*100, 3)
+    colors = np.random.rand(N_CLUSTERS, 3)
     graph.plot(node_colors={node: colors[cluster] for node, cluster in assignments.items()})
     plt.title('Clustering found by Hippocluster')
     plt.show()

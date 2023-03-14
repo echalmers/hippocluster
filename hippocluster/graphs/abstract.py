@@ -16,7 +16,7 @@ class RandomWalkGraph:
     composition class that extends a networkx graph with the ability to generate random walks, and other functionality
     """
 
-    def __init__(self, networkx_graph, pos=None, walk_type='walk', no_deadend_walks=True):
+    def __init__(self, networkx_graph, pos=None, walk_type='walk'):
         """
         :param networkx_graph: base networkx graph to use
         :parm pos: a networkx layout for plotting
@@ -26,9 +26,10 @@ class RandomWalkGraph:
         self.shuffled_node_list = None
         self.random_walk_index = 0
         self.adj = None
-        self.no_deadend_walks = no_deadend_walks
 
         if walk_type == 'diffusion':
+            if not hasattr(networkx_graph, 'successors'):
+                raise ValueError("diffusion walk_type only works with directed graphs that have successors and predecessors methods")
             self._walk_generator = self._random_diffusion
         else:
             self._walk_generator = self._random_walk
@@ -131,10 +132,7 @@ class RandomWalkGraph:
         :return: list of nodes passed
         """
         if self.shuffled_node_list is None:
-            if self.no_deadend_walks:
-                self.shuffled_node_list = [node for node in self.G if len(self.G[node]) > 0]
-            else:
-                self.shuffled_node_list = list(self.G)
+            self.shuffled_node_list = list(self.G)
             random.shuffle(self.shuffled_node_list)
 
         # nodes = [start_node or random.choice(list(self.G.nodes))]
@@ -158,20 +156,25 @@ class RandomWalkGraph:
 
     def _random_diffusion(self, size, start_node):
         """
-        Generate a set of nodes accessible from a random start node, by repeated multiplication by the
-        adjacency matrix
+        generate a set of nodes by growing a frontier of nodes from the start state.
+        grow this frontier backward if the start_node is a sink
         :param size: quit when the set of nodes reaches this size
         :return: set of nodes
         """
 
         nodes = [start_node]
         frontier = dict()
+        forward = len(self.G[start_node]) > 0
 
         for step in range(size - 1):
-            options = self.G.adj.get(nodes[-1], dict())
-            for node in options:
-                weight = options[node].get('weight', 1.0)
-                frontier[node] = frontier.get(node, 0.0) + weight
+            if forward:
+                for node in self.G.successors(nodes[-1]):
+                    weight = self.G[nodes[-1]][node].get('weight', 1.0)
+                    frontier[node] = frontier.get(node, 0.0) + weight
+            else:
+                for node in self.G.predecessors(nodes[-1]):
+                    weight = self.G[node][nodes[-1]].get('weight', 1.0)
+                    frontier[node] = frontier.get(node, 0.0) + weight
 
             if len(frontier) == 0:
                 return nodes
