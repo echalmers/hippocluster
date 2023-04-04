@@ -1,5 +1,6 @@
-from hippocluster.graphs.lfr import RandomWalkLFR
+from hippocluster.graphs.abstract import RandomWalkGraph
 from hippocluster.algorithms.hippocluster import Hippocluster
+import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -8,44 +9,52 @@ plt.ion()
 
 
 # create a small sample graph
-graph = RandomWalkLFR(n=100, tau1=2, tau2=1.1, mu=0.1, min_degree=3, max_degree=5, min_community=15, max_community=20)
+graph = RandomWalkGraph(nx.connected_caveman_graph(6, 10))
 
-colors = np.random.rand(100, 3)  # random colors for visualizing graph clusters
-
-# set a desired number of clusters
-N_CLUSTERS = graph.n_communities
+colors = [
+    [0, 0, 1],
+    [0, 1, 0],
+    [1, 0, 0],
+    [0, 1, 1],
+    [1, 1, 0],
+    [1, 0, 1],
+    [0, 0, 0]]  # colors for visualizing graph clusters
 
 # instantiate Hippocluster object
 hippocluster = Hippocluster(
-    n_clusters=N_CLUSTERS,
+    n_clusters=6,
     drop_threshold=0.001,
+    lr=0.1
 )
 
-# perform clustering
+# supply first batch of random walks to initialize hippocluster
+hippocluster.update(
+    walks=graph.random_walks(
+        min_length=2,
+        max_length=3,
+        n=50
+    ))
+
+# now supply one walk at a time - visualizing as we go
+
 for step in range(100):
 
     # get a batch of random walks
-    walks = graph.random_walks(min_length=10, max_length=25, n=N_CLUSTERS*5 if step == 0 else N_CLUSTERS)
+    walk = graph.random_walks(min_length=5, max_length=15, n=1)
 
     # update the clustering
-    hippocluster.update(walks)
+    hippocluster.update(walk)
     assignments = hippocluster.get_assignments(graph)
 
-
-    # plot original graph, random walks from each batch, and cluster assignments
+    # plot original graph, random walk, and cluster assignments
     plt.clf()
-    n_panels = 2 if graph.n_communities is None else 3
 
-    plt.subplot(1, n_panels, 1)
-    graph.plot(node_colors={node: colors[i] for i in range(len(walks)) for node in walks[i]})
-    plt.title('random walks in this batch')
+    plt.subplot(1, 2, 1)
+    graph.plot(node_colors={node: [0, 0, 0] if node not in walk[0] else [0.7, 0.7, 0.7] for node in graph.nodes})
+    plt.title('random walk')
 
-    plt.subplot(1, n_panels, 2)
-    graph.plot(node_colors={node: colors[cluster][::-1] for node, cluster in assignments.items()})
+    plt.subplot(1, 2, 2)
+    graph.plot(node_colors={node: colors[assignments.get(node, -1)] for node in graph.nodes})
     plt.title('Clustering found by Hippocluster')
 
-    if graph.n_communities is not None:
-        plt.subplot(1, n_panels, 3)
-        graph.plot(node_colors={graph.nodes[i]: colors[graph.communities[i]] for i in range(graph.n_nodes)})
-        plt.title('ground truth clusters')
-    plt.pause(0.02)
+    plt.pause(0.5 - step * 0.005)
