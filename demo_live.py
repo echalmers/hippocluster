@@ -3,9 +3,12 @@ from hippocluster.algorithms.hippocluster import Hippocluster
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 
 
 plt.ion()
+random.seed(0)
+np.random.seed(0)
 
 
 # create a small sample graph
@@ -37,7 +40,7 @@ hippocluster.update(
 
 # now supply one walk at a time - visualizing as we go
 
-for step in range(100):
+for step in range(200):
 
     # get a batch of random walks
     walk = graph.random_walks(min_length=5, max_length=15, n=1)
@@ -57,4 +60,4 @@ for step in range(100):
     graph.plot(node_colors={node: colors[assignments.get(node, -1)] for node in graph.nodes})
     plt.title('Clustering found by Hippocluster')
 
-    plt.pause(0.5 - step * 0.005)
+    plt.pause(0.5 if step < 50 else 0.01)
