@@ -1,5 +1,6 @@
 # hippocluster
-Hippocluster: an efficient, brain-inspired adaptation of K-means for graph clustering
+Hippocluster: an efficient, brain-inspired adaptation of K-means for graph clustering.
+
 The corresponding research paper by Chalmers et al is [here](https://www.sciencedirect.com/science/article/pii/S0020025523005844)
 
 ## installation
